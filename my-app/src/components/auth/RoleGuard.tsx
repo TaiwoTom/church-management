@@ -10,6 +10,19 @@ interface RoleGuardProps {
   fallback?: React.ReactNode;
 }
 
+// Helper to normalize role for comparison
+const normalizeRole = (role: string | UserRole | undefined): string => {
+  if (!role) return '';
+  return String(role).toLowerCase();
+};
+
+// Helper to check if a role matches allowed roles
+const roleMatches = (userRole: string | UserRole | undefined, allowedRoles: UserRole[]): boolean => {
+  if (!userRole) return false;
+  const normalizedUserRole = normalizeRole(userRole);
+  return allowedRoles.some(role => normalizeRole(role) === normalizedUserRole);
+};
+
 /**
  * Component that conditionally renders children based on user role
  * Use this for showing/hiding UI elements based on role
@@ -17,7 +30,7 @@ interface RoleGuardProps {
 export function RoleGuard({ children, allowedRoles, fallback = null }: RoleGuardProps) {
   const userRole = useAppSelector(selectUserRole);
 
-  if (!userRole || !allowedRoles.includes(userRole)) {
+  if (!roleMatches(userRole, allowedRoles)) {
     return <>{fallback}</>;
   }
 
@@ -29,7 +42,7 @@ export function RoleGuard({ children, allowedRoles, fallback = null }: RoleGuard
  */
 export function useHasRole(allowedRoles: UserRole[]): boolean {
   const userRole = useAppSelector(selectUserRole);
-  return userRole ? allowedRoles.includes(userRole) : false;
+  return roleMatches(userRole, allowedRoles);
 }
 
 /**
@@ -40,14 +53,17 @@ export function useHasMinimumRole(minimumRole: UserRole): boolean {
 
   if (!userRole) return false;
 
-  const roleHierarchy: Record<UserRole, number> = {
-    [UserRole.NEWCOMER]: 0,
-    [UserRole.MEMBER]: 1,
-    [UserRole.STAFF]: 2,
-    [UserRole.ADMIN]: 3,
+  const roleHierarchy: Record<string, number> = {
+    'newcomer': 0,
+    'member': 1,
+    'staff': 2,
+    'admin': 3,
   };
 
-  return roleHierarchy[userRole] >= roleHierarchy[minimumRole];
+  const normalizedUserRole = normalizeRole(userRole);
+  const normalizedMinRole = normalizeRole(minimumRole);
+
+  return (roleHierarchy[normalizedUserRole] ?? -1) >= (roleHierarchy[normalizedMinRole] ?? -1);
 }
 
 /**
@@ -57,17 +73,24 @@ export function usePermissions() {
   const user = useAppSelector(selectUser);
   const userRole = useAppSelector(selectUserRole);
 
-  const canManageUsers = userRole === UserRole.ADMIN;
-  const canManageAttendance = userRole === UserRole.STAFF || userRole === UserRole.ADMIN;
-  const canManageMinistries = userRole === UserRole.STAFF || userRole === UserRole.ADMIN;
-  const canManageSermons = userRole === UserRole.STAFF || userRole === UserRole.ADMIN;
-  const canManageServices = userRole === UserRole.STAFF || userRole === UserRole.ADMIN;
-  const canSendEmails = userRole === UserRole.STAFF || userRole === UserRole.ADMIN;
-  const canManageMedia = userRole === UserRole.STAFF || userRole === UserRole.ADMIN;
-  const canViewAnalytics = userRole === UserRole.STAFF || userRole === UserRole.ADMIN;
-  const canAccessAdmin = userRole === UserRole.ADMIN;
-  const canViewDirectory = userRole !== UserRole.NEWCOMER;
-  const canJoinMinistries = userRole === UserRole.MEMBER || userRole === UserRole.STAFF || userRole === UserRole.ADMIN;
+  const normalizedRole = normalizeRole(userRole);
+
+  const isAdmin = normalizedRole === 'admin';
+  const isStaff = normalizedRole === 'staff';
+  const isMember = normalizedRole === 'member';
+  const isNewcomer = normalizedRole === 'newcomer';
+
+  const canManageUsers = isAdmin;
+  const canManageAttendance = isStaff || isAdmin;
+  const canManageMinistries = isStaff || isAdmin;
+  const canManageSermons = isStaff || isAdmin;
+  const canManageServices = isStaff || isAdmin;
+  const canSendEmails = isStaff || isAdmin;
+  const canManageMedia = isStaff || isAdmin;
+  const canViewAnalytics = isStaff || isAdmin;
+  const canAccessAdmin = isAdmin;
+  const canViewDirectory = !isNewcomer;
+  const canJoinMinistries = isMember || isStaff || isAdmin;
 
   return {
     user,

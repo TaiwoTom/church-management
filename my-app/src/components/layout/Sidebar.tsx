@@ -33,6 +33,13 @@ interface NavItem {
   children?: NavItem[];
 }
 
+// Helper to check if user role matches allowed roles (case-insensitive)
+const roleMatches = (userRole: string | UserRole | undefined, allowedRoles: UserRole[]): boolean => {
+  if (!userRole) return false;
+  const normalizedUserRole = String(userRole).toLowerCase();
+  return allowedRoles.some(role => String(role).toLowerCase() === normalizedUserRole);
+};
+
 const navigationItems: NavItem[] = [
   {
     name: 'Dashboard',
@@ -214,7 +221,7 @@ export const Sidebar: React.FC = () => {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   const filteredNav = navigationItems.filter((item) =>
-    userRole ? item.roles.includes(userRole) : false
+    roleMatches(userRole, item.roles)
   );
 
   const toggleExpand = (name: string) => {
@@ -279,7 +286,7 @@ export const Sidebar: React.FC = () => {
                   {isExpanded && (
                     <div className="bg-gray-950">
                       {item.children
-                        ?.filter((child) => (userRole ? child.roles.includes(userRole) : false))
+                        ?.filter((child) => roleMatches(userRole, child.roles))
                         .map((child) => {
                           const ChildIcon = child.icon;
                           const childActive = isActive(child.href);

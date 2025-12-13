@@ -41,9 +41,12 @@ export default function MemberDashboard() {
 
   const isLoading = servicesLoading || sermonsLoading || ministriesLoading || attendanceLoading;
 
+  // Ensure userAttendance is an array
+  const attendanceList = Array.isArray(userAttendance) ? userAttendance : [];
+
   // Calculate attendance rate
-  const attendanceRate = userAttendance
-    ? Math.round((userAttendance.filter(a => a.status === 'PRESENT').length / (userAttendance.length || 1)) * 100)
+  const attendanceRate = attendanceList.length > 0
+    ? Math.round((attendanceList.filter(a => a.status === 'PRESENT').length / attendanceList.length) * 100)
     : 0;
 
   const stats = [
@@ -55,7 +58,7 @@ export default function MemberDashboard() {
     },
     {
       name: 'Services Attended',
-      value: userAttendance?.filter(a => a.status === 'PRESENT').length || 0,
+      value: attendanceList.filter(a => a.status === 'PRESENT').length,
       icon: CheckCircleIcon,
       color: 'bg-green-500',
     },

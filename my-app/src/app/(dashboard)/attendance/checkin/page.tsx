@@ -37,7 +37,7 @@ export default function CheckInPage() {
   });
 
   const markAttendanceMutation = useMutation({
-    mutationFn: (data: { userId: string; sundayServiceId: string; status: string }) =>
+    mutationFn: (data: { userId: string; serviceId: string }) =>
       attendanceService.markAttendance(data),
     onSuccess: (_, variables) => {
       setCheckedInMembers((prev) => new Set([...prev, variables.userId]));
@@ -47,7 +47,7 @@ export default function CheckInPage() {
     },
   });
 
-  const handleCheckIn = (userId: string, status: 'PRESENT' | 'LATE' = 'PRESENT') => {
+  const handleCheckIn = (userId: string) => {
     const serviceId = selectedService || currentService?.id;
     if (!serviceId) {
       alert('Please select a service first');
@@ -56,8 +56,7 @@ export default function CheckInPage() {
 
     markAttendanceMutation.mutate({
       userId,
-      sundayServiceId: serviceId,
-      status,
+      serviceId,
     });
   };
 
@@ -181,25 +180,15 @@ export default function CheckInPage() {
                             Checked In
                           </span>
                         ) : (
-                          <>
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={() => handleCheckIn(member.id, 'PRESENT')}
-                              isLoading={markAttendanceMutation.isPending}
-                            >
-                              <CheckCircleIcon className="h-4 w-4 mr-1" />
-                              Present
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleCheckIn(member.id, 'LATE')}
-                            >
-                              <ClockIcon className="h-4 w-4 mr-1" />
-                              Late
-                            </Button>
-                          </>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleCheckIn(member.id)}
+                            isLoading={markAttendanceMutation.isPending}
+                          >
+                            <CheckCircleIcon className="h-4 w-4 mr-1" />
+                            Check In
+                          </Button>
                         )}
                       </div>
                     </div>

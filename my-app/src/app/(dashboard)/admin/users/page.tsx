@@ -252,7 +252,7 @@ export default function UserManagement() {
                       </span>
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-500">
-                      {new Date(user.dateJoined).toLocaleDateString()}
+                      {user.dateJoined ? new Date(user.dateJoined).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="px-4 py-4 text-right">
                       <div className="flex items-center justify-end space-x-2">

@@ -38,9 +38,11 @@ export default function ServiceCalendar() {
 
   const { daysInMonth, firstDayOfMonth } = getDaysInMonth(currentMonth);
 
+  // Ensure services.data is an array
+  const servicesList = Array.isArray(services?.data) ? services.data : [];
+
   const getServicesForDate = (day: number) => {
-    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-    return services?.data?.filter((service) => {
+    return servicesList.filter((service) => {
       const serviceDate = new Date(service.date);
       return (
         serviceDate.getDate() === day &&

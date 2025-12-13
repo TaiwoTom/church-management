@@ -59,10 +59,12 @@ export default function LoginPage() {
   };
 
   const getDashboardRoute = (role: string) => {
-    switch (role) {
-      case 'ADMIN':
+    // Handle both uppercase and lowercase role values
+    const normalizedRole = role.toLowerCase();
+    switch (normalizedRole) {
+      case 'admin':
         return '/dashboard/admin';
-      case 'STAFF':
+      case 'staff':
         return '/dashboard/staff';
       default:
         return '/dashboard';

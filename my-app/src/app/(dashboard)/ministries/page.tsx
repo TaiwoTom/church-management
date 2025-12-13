@@ -38,7 +38,10 @@ export default function MinistryDirectory() {
 
   const categories = ['Worship', 'Youth', 'Outreach', 'Education', 'Support', 'Media'];
 
-  const filteredMinistries = ministries?.data?.filter((ministry) => {
+  // Ensure ministries.data is an array
+  const ministriesList = Array.isArray(ministries?.data) ? ministries.data : [];
+
+  const filteredMinistries = ministriesList.filter((ministry) => {
     const matchesSearch = ministry.name.toLowerCase().includes(search.toLowerCase()) ||
       ministry.description?.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = !selectedCategory || ministry.category === selectedCategory;

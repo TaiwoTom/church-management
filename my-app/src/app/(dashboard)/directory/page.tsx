@@ -207,10 +207,10 @@ export default function MemberDirectory() {
 
                 {/* Member Since */}
                 <p className="mt-4 text-xs text-gray-500">
-                  Member since {new Date(member.dateJoined).toLocaleDateString('en-US', {
+                  Member since {member.dateJoined ? new Date(member.dateJoined).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'short',
-                  })}
+                  }) : 'N/A'}
                 </p>
               </div>
             </Card>

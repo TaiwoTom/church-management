@@ -33,11 +33,14 @@ export default function SermonLibrary() {
       ),
   });
 
-  // Get unique series and speakers for filters
-  const series = [...new Set(sermons?.data?.map((s) => s.series).filter(Boolean))] as string[];
-  const speakers = [...new Set(sermons?.data?.map((s) => s.speaker).filter(Boolean))] as string[];
+  // Ensure sermons.data is an array
+  const sermonsList = Array.isArray(sermons?.data) ? sermons.data : [];
 
-  const filteredSermons = sermons?.data?.filter(
+  // Get unique series and speakers for filters
+  const series = [...new Set(sermonsList.map((s) => s.series).filter(Boolean))] as string[];
+  const speakers = [...new Set(sermonsList.map((s) => s.speaker).filter(Boolean))] as string[];
+
+  const filteredSermons = sermonsList.filter(
     (sermon) =>
       sermon.title.toLowerCase().includes(search.toLowerCase()) ||
       sermon.speaker.toLowerCase().includes(search.toLowerCase()) ||

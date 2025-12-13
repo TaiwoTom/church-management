@@ -1,19 +1,19 @@
-// User Roles
+// User Roles (lowercase to match backend API)
 export enum UserRole {
-  NEWCOMER = 'NEWCOMER',
-  MEMBER = 'MEMBER',
-  STAFF = 'STAFF',
-  ADMIN = 'ADMIN'
+  NEWCOMER = 'newcomer',
+  MEMBER = 'member',
+  STAFF = 'staff',
+  ADMIN = 'admin'
 }
 
-// Membership Status
+// Membership Status (lowercase to match backend API)
 export enum MembershipStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  SUSPENDED = 'SUSPENDED'
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  SUSPENDED = 'suspended'
 }
 
-// User Interface
+// User Interface (matches backend API schema)
 export interface User {
   id: string;
   email: string;
@@ -21,13 +21,19 @@ export interface User {
   lastName: string;
   phone?: string;
   profilePicture?: string;
-  role: UserRole;
-  membershipStatus: MembershipStatus;
-  dateJoined: string;
+  role: UserRole | string;
+  isActive?: boolean;
+  isEmailVerified?: boolean;
+  metadata?: {
+    membershipStatus?: MembershipStatus | string;
+    joinDate?: string;
+  };
+  membershipStatus?: MembershipStatus | string;
+  dateJoined?: string;
   departmentId?: string;
   ministries?: string[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Auth Interfaces
@@ -45,8 +51,21 @@ export interface RegisterData {
   profilePicture?: string;
 }
 
+// Backend API response structure
 export interface AuthResponse {
-  user: User;
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+    tokens: {
+      accessToken: string;
+      refreshToken: string;
+    };
+  };
+}
+
+// Simple auth response for internal use
+export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
 }
