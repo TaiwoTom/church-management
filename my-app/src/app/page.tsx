@@ -1,73 +1,39 @@
 'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAppSelector } from '@/store/hooks';
+import { selectIsAuthenticated, selectUser } from '@/store/slices/authSlice';
+import { UserRole } from '@/types';
 
-export default function LoginPage() {
+export default function HomePage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const user = useAppSelector(selectUser);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    const res = await fetch("/api/v1/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.message);
-      setLoading(false);
-      return;
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Role-based dashboard redirection
+      switch (user.role) {
+        case UserRole.ADMIN:
+          router.push('/dashboard/admin');
+          break;
+        case UserRole.STAFF:
+          router.push('/dashboard/staff');
+          break;
+        default:
+          router.push('/dashboard');
+      }
+    } else {
+      router.push('/login');
     }
-
-    router.push("/dashboard");
-  };
+  }, [isAuthenticated, user, router]);
 
   return (
-    <div className="min-h-screen flex justify-center items-center bg-gray-100 p-6">
-      <div className="bg-white p-8 rounded-2xl shadow w-full max-w-sm">
-
-        <h1 className="text-2xl font-semibold text-center mb-6">
-          Admin Login
-        </h1>
-
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full p-2 border rounded"
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full p-2 border rounded"
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white p-2 rounded"
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
-
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading...</p>
       </div>
     </div>
   );
