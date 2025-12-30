@@ -31,7 +31,8 @@ export interface User {
   membershipStatus?: MembershipStatus | string;
   dateJoined?: string;
   departmentId?: string;
-  ministries?: string[];
+  ministries?: Array<string | { id: string; name: string }>;
+  group?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -75,11 +76,16 @@ export interface Attendance {
   id: string;
   userId: string;
   sundayServiceId: string;
+  serviceId?: string;
   date: string;
   status: 'PRESENT' | 'ABSENT' | 'LATE';
   notes?: string;
   markedBy: string;
   createdAt: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  user?: User;
+  service?: SundayService;
 }
 
 export interface AttendanceStats {
@@ -88,6 +94,9 @@ export interface AttendanceStats {
   attendanceRate: number;
   firstTimeVisitors: number;
   returningMembers: number;
+  todayCount?: number;
+  totalMembers?: number;
+  weekCount?: number;
 }
 
 // Ministry Interfaces

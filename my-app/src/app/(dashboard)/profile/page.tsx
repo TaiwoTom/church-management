@@ -259,17 +259,21 @@ export default function ProfilePage() {
       <Card title="Ministry Affiliations">
         {user?.ministries && user.ministries.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {user.ministries.map((ministryId) => (
-              <div key={ministryId} className="p-4 bg-gray-50 rounded-lg flex items-center">
-                <div className="bg-blue-100 p-2 rounded-lg mr-3">
-                  <UserCircleIcon className="h-6 w-6 text-blue-600" />
+            {user.ministries.map((ministry, index) => {
+              const ministryId = typeof ministry === 'string' ? ministry : ministry.id;
+              const ministryName = typeof ministry === 'string' ? ministry : ministry.name;
+              return (
+                <div key={ministryId || index} className="p-4 bg-gray-50 rounded-lg flex items-center">
+                  <div className="bg-blue-100 p-2 rounded-lg mr-3">
+                    <UserCircleIcon className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{ministryName || `Ministry ${ministryId}`}</p>
+                    <p className="text-sm text-gray-500">Active Member</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-gray-900">Ministry {ministryId}</p>
-                  <p className="text-sm text-gray-500">Active Member</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <p className="text-gray-500 text-center py-4">

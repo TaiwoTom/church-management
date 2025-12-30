@@ -1,53 +1,60 @@
 import apiClient from '@/lib/api-client';
 import { Ministry, PaginatedResponse } from '@/types';
 
-// Helper to extract data from API response
+// Helper to extract data from API response - handles multiple nesting levels
 const extractData = <T>(response: any): T => {
-  if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-    return response.data.data;
+  // Level 1: response.data
+  let data = response?.data;
+
+  // Level 2: response.data.data
+  if (data && typeof data === 'object' && 'data' in data) {
+    data = data.data;
   }
-  return response.data;
+
+  return data;
 };
 
 export const ministryService = {
   // Get all ministries
   getMinistries: async (page = 1, limit = 20): Promise<PaginatedResponse<Ministry>> => {
     const response = await apiClient.get('/ministries', { params: { page, limit } });
-    const data = extractData<any>(response);
 
-    // Handle both paginated and array responses
-    if (Array.isArray(data)) {
-      return {
-        data,
-        total: data.length,
-        page: 1,
-        limit: data.length,
-        totalPages: 1,
-      };
+    // Debug: Log the raw response
+    console.log('Raw API response:', response);
+    console.log('Response data:', response?.data);
+
+    // Try different extraction methods
+    let ministriesArray: Ministry[] = [];
+
+    // Method 1: Direct array in response.data
+    if (Array.isArray(response?.data)) {
+      ministriesArray = response.data;
+    }
+    // Method 2: Array in response.data.data
+    else if (Array.isArray(response?.data?.data)) {
+      ministriesArray = response.data.data;
+    }
+    // Method 3: Array in response.data.ministries
+    else if (Array.isArray(response?.data?.ministries)) {
+      ministriesArray = response.data.ministries;
+    }
+    // Method 4: Array in response.data.data.data (triple nested)
+    else if (Array.isArray(response?.data?.data?.data)) {
+      ministriesArray = response.data.data.data;
+    }
+    // Method 5: Paginated response with data array
+    else if (response?.data?.data && Array.isArray(response.data.data.data)) {
+      ministriesArray = response.data.data.data;
     }
 
-    // If it's already paginated format
-    if (data && Array.isArray(data.data)) {
-      return data;
-    }
-
-    // If data has ministries array
-    if (data && Array.isArray(data.ministries)) {
-      return {
-        data: data.ministries,
-        total: data.total || data.ministries.length,
-        page: data.page || 1,
-        limit: data.limit || data.ministries.length,
-        totalPages: data.totalPages || 1,
-      };
-    }
+    console.log('Extracted ministries array:', ministriesArray);
 
     return {
-      data: [],
-      total: 0,
+      data: ministriesArray,
+      total: ministriesArray.length,
       page: 1,
-      limit: 20,
-      totalPages: 0,
+      limit: ministriesArray.length || 20,
+      totalPages: 1,
     };
   },
 
