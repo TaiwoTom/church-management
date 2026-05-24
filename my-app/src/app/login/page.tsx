@@ -7,7 +7,6 @@ import { useAppDispatch } from '@/store/hooks';
 import { setUser, setError, setLoading } from '@/store/slices/authSlice';
 import { authService } from '@/services';
 import {
-  BuildingLibraryIcon,
   EnvelopeIcon,
   LockClosedIcon,
   EyeIcon,
@@ -30,6 +29,12 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // 2FA challenge state
+  const [step, setStep] = useState<'login' | '2fa'>('login');
+  const [challengeToken, setChallengeToken] = useState('');
+  const [twoFactorEmail, setTwoFactorEmail] = useState('');
+  const [code, setCode] = useState('');
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -45,8 +50,14 @@ export default function LoginPage() {
     dispatch(setLoading(true));
 
     try {
-      const response = await authService.login(formData);
-      dispatch(setUser(response.user));
+      const result = await authService.login(formData);
+      if ('twoFactorRequired' in result) {
+        setChallengeToken(result.challengeToken);
+        setTwoFactorEmail(result.email);
+        setStep('2fa');
+        return;
+      }
+      dispatch(setUser(result.user));
       router.push('/dashboard');
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
@@ -55,6 +66,31 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
       dispatch(setLoading(false));
+    }
+  };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setLocalError('');
+    try {
+      const result = await authService.verifyTwoFactor(challengeToken, code.trim());
+      dispatch(setUser(result.user));
+      router.push('/dashboard');
+    } catch (error: any) {
+      setLocalError(error.response?.data?.message || 'Invalid or expired code.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setLocalError('');
+    try {
+      await authService.resendTwoFactor(challengeToken);
+      setLocalError('A new code has been sent.');
+    } catch {
+      setLocalError('Could not resend the code.');
     }
   };
 
@@ -91,11 +127,12 @@ export default function LoginPage() {
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-center items-center w-full p-12 text-white">
           <div className="mb-8">
-            <div className="bg-white/20 backdrop-blur-sm p-6 rounded-2xl">
-              <BuildingLibraryIcon className="h-16 w-16 text-white" />
+            <div className="bg-white p-4 rounded-2xl shadow-lg">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="Mount Zion Chapel" className="h-20 w-20 object-contain" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-center mb-3">Church Management System</h1>
+          <h1 className="text-3xl font-bold text-center mb-3">Mount Zion Chapel</h1>
           <p className="text-lg text-blue-100 text-center max-w-sm mb-8">
             Manage your church operations efficiently
           </p>
@@ -127,18 +164,25 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-6">
-            <div className="inline-flex items-center justify-center bg-blue-600 p-3 rounded-2xl mb-3">
-              <BuildingLibraryIcon className="h-10 w-10 text-white" />
+            <div className="inline-flex items-center justify-center bg-white ring-1 ring-gray-200 p-2.5 rounded-2xl mb-3 shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="Mount Zion Chapel" className="h-12 w-12 object-contain" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900">Church Management</h1>
+            <h1 className="text-xl font-bold text-gray-900">Mount Zion Chapel</h1>
           </div>
 
           {/* Form Container */}
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
             {/* Header */}
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
-              <p className="text-gray-500 mt-1 text-sm">Sign in to your account</p>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {step === '2fa' ? 'Enter your code' : 'Welcome Back'}
+              </h2>
+              <p className="text-gray-500 mt-1 text-sm">
+                {step === '2fa'
+                  ? `We sent a 6-digit code to ${twoFactorEmail}`
+                  : 'Sign in to your account'}
+              </p>
             </div>
 
             {/* Error Message */}
@@ -149,7 +193,48 @@ export default function LoginPage() {
               </div>
             )}
 
+            {/* 2FA code step */}
+            {step === '2fa' && (
+              <form onSubmit={handleVerify} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Verification code
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoFocus
+                    maxLength={6}
+                    value={code}
+                    onChange={(e) => { setCode(e.target.value.replace(/\D/g, '')); setLocalError(''); }}
+                    placeholder="123456"
+                    className="w-full px-4 py-3 text-center text-2xl tracking-[0.4em] font-semibold bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-gray-900"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading || code.length < 6}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-3 rounded-xl transition-colors flex items-center justify-center"
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    'Verify & sign in'
+                  )}
+                </button>
+                <div className="flex items-center justify-between text-sm">
+                  <button type="button" onClick={() => { setStep('login'); setCode(''); setLocalError(''); }} className="text-gray-500 hover:text-gray-700">
+                    Back
+                  </button>
+                  <button type="button" onClick={handleResend} className="text-blue-600 hover:text-blue-700 font-medium">
+                    Resend code
+                  </button>
+                </div>
+              </form>
+            )}
+
             {/* Login Form */}
+            {step === 'login' && (
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Email Field */}
               <div>
@@ -230,12 +315,13 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
+            )}
           </div>
 
           {/* Footer */}
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-400">
-              &copy; {new Date().getFullYear()} Church Management System
+              &copy; {new Date().getFullYear()} Mount Zion Chapel
             </p>
           </div>
         </div>

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { authService } from '@/services';
 import {
-  BuildingLibraryIcon,
   EnvelopeIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
@@ -117,7 +116,7 @@ export default function ForgotPasswordPage() {
             {/* Footer */}
             <div className="mt-8 text-center">
               <p className="text-sm text-gray-500">
-                &copy; {new Date().getFullYear()} Church Management System. All rights reserved.
+                &copy; {new Date().getFullYear()} Mount Zion Chapel. All rights reserved.
               </p>
             </div>
           </div>
@@ -150,8 +149,9 @@ export default function ForgotPasswordPage() {
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-center items-center w-full p-12 text-white">
           <div className="mb-8">
-            <div className="bg-white/20 backdrop-blur-sm p-6 rounded-2xl">
-              <BuildingLibraryIcon className="h-20 w-20 text-white" />
+            <div className="bg-white p-4 rounded-2xl shadow-lg">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="Mount Zion Chapel" className="h-20 w-20 object-contain" />
             </div>
           </div>
           <h1 className="text-4xl font-bold text-center mb-4">Forgot Password?</h1>
@@ -188,8 +188,9 @@ export default function ForgotPasswordPage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8">
-            <div className="inline-flex items-center justify-center bg-orange-500 p-4 rounded-2xl mb-4">
-              <BuildingLibraryIcon className="h-12 w-12 text-white" />
+            <div className="inline-flex items-center justify-center bg-white ring-1 ring-gray-200 p-2.5 rounded-2xl mb-4 shadow-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="Mount Zion Chapel" className="h-12 w-12 object-contain" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Forgot Password?</h1>
           </div>
@@ -301,7 +302,7 @@ export default function ForgotPasswordPage() {
           {/* Footer */}
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-500">
-              &copy; {new Date().getFullYear()} Church Management System. All rights reserved.
+              &copy; {new Date().getFullYear()} Mount Zion Chapel. All rights reserved.
             </p>
           </div>
         </div>

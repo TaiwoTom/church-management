@@ -73,6 +73,35 @@ export default function SettingsPage() {
     updateProfileMutation.mutate(profileForm);
   };
 
+  // --- Two-factor authentication ---
+  const twoFaEnabled = !!(user as any)?.twoFactorEnabled;
+  const [twoFaStep, setTwoFaStep] = useState<'idle' | 'confirming'>('idle');
+  const [twoFaCode, setTwoFaCode] = useState('');
+  const flash = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3000);
+  };
+  const requestEnable2FA = useMutation({
+    mutationFn: () => authService.requestEnableTwoFactor(),
+    onSuccess: () => { setTwoFaStep('confirming'); flash('success', 'Verification code sent to your email'); },
+    onError: () => flash('error', 'Could not send code'),
+  });
+  const confirmEnable2FA = useMutation({
+    mutationFn: () => authService.confirmEnableTwoFactor(twoFaCode.trim()),
+    onSuccess: () => {
+      dispatch(updateUser({ twoFactorEnabled: true } as any));
+      setTwoFaStep('idle');
+      setTwoFaCode('');
+      flash('success', 'Two-factor authentication enabled');
+    },
+    onError: () => flash('error', 'Invalid or expired code'),
+  });
+  const disable2FA = useMutation({
+    mutationFn: () => authService.disableTwoFactor(),
+    onSuccess: () => { dispatch(updateUser({ twoFactorEnabled: false } as any)); flash('success', 'Two-factor authentication disabled'); },
+    onError: () => flash('error', 'Could not disable 2FA'),
+  });
+
 
   const tabs = [
     { id: 'profile' as TabType, name: 'Profile', icon: UserCircleIcon },
@@ -217,88 +246,40 @@ export default function SettingsPage() {
             {activeTab === 'password' && (
               <>
                 <div className="p-4 border-b border-gray-200 shrink-0">
-                  <h2 className="text-lg font-semibold text-gray-900">Change Password</h2>
-                  <p className="text-sm text-gray-500 mt-1">Update your password to keep your account secure</p>
+                  <h2 className="text-lg font-semibold text-gray-900">Reset Password</h2>
+                  <p className="text-sm text-gray-500 mt-1">For your security, password changes are confirmed via email</p>
                 </div>
                 <div className="flex-1 p-4 overflow-auto">
-                  <form onSubmit={handlePasswordSubmit} className="max-w-2xl space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
-                      <div className="relative">
-                        <input
-                          type={showPasswords.current ? 'text' : 'password'}
-                          value={passwordForm.currentPassword}
-                          onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 pr-10"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          {showPasswords.current ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-                        </button>
+                  <div className="max-w-2xl space-y-4">
+                    <div className="p-5 bg-blue-50 border border-blue-200 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <KeyIcon className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-blue-900 mb-1">Email-confirmed password reset</h3>
+                          <p className="text-sm text-blue-800 mb-3">
+                            We&apos;ll send a secure reset link to <strong>{user?.email || 'your email'}</strong>.
+                            The link expires in 1 hour and can only be used once.
+                          </p>
+                          <button
+                            type="button"
+                            disabled={!user?.email || sendResetMutation.isPending}
+                            onClick={() => {
+                              if (user?.email) sendResetMutation.mutate(user.email);
+                            }}
+                            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+                          >
+                            {sendResetMutation.isPending ? 'Sending…' : 'Send Reset Link to My Email'}
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                      <div className="relative">
-                        <input
-                          type={showPasswords.new ? 'text' : 'password'}
-                          value={passwordForm.newPassword}
-                          onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 pr-10"
-                          required
-                          minLength={8}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          {showPasswords.new ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-                        </button>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">Must be at least 8 characters</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                      <div className="relative">
-                        <input
-                          type={showPasswords.confirm ? 'text' : 'password'}
-                          value={passwordForm.confirmPassword}
-                          onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 pr-10"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          {showPasswords.confirm ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={changePasswordMutation.isPending}
-                      className="px-6 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
-                    >
-                      {changePasswordMutation.isPending ? 'Changing...' : 'Change Password'}
-                    </button>
-                  </form>
-
-                  {/* Forgot Password Section */}
-                  <div className="mt-8 pt-6 border-t border-gray-200 max-w-2xl">
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                      <h3 className="font-medium text-amber-900 mb-1">Forgot your current password?</h3>
-                      <p className="text-sm text-amber-700 mb-3">
-                        If you can&apos;t remember your current password, we can send a reset link to your email.
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-600">
+                      <p className="font-medium text-gray-800 mb-1">Why the change?</p>
+                      <p>
+                        Setting a new password directly from the app could let anyone with access to your logged-in
+                        session change your credentials silently. The email-link flow guarantees that you (the
+                        account holder) approve the change.
                       </p>
                     </div>
                   </div>
@@ -334,6 +315,72 @@ export default function SettingsPage() {
                           </span>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Two-Factor Authentication */}
+                    <div className="p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="font-medium text-gray-900">Two-Factor Authentication</h3>
+                          <p className="text-sm text-gray-500 mt-1">
+                            Adds a second step at sign-in: after your password, we email a 6-digit code (valid for 10 minutes) that you enter to finish logging in. Protects your account if your password is ever leaked.{' '}
+                            <span className={twoFaEnabled ? 'text-green-600 font-medium' : 'text-gray-500'}>
+                              Currently {twoFaEnabled ? 'enabled' : 'disabled'}.
+                            </span>
+                          </p>
+                        </div>
+                        {twoFaEnabled ? (
+                          <button
+                            onClick={() => disable2FA.mutate()}
+                            disabled={disable2FA.isPending}
+                            title="Turn off two-factor; you'll sign in with just your password"
+                            className="px-4 py-2 rounded-xl bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 disabled:opacity-50 shrink-0"
+                          >
+                            {disable2FA.isPending ? 'Disabling…' : 'Disable'}
+                          </button>
+                        ) : twoFaStep === 'idle' ? (
+                          <button
+                            onClick={() => requestEnable2FA.mutate()}
+                            disabled={requestEnable2FA.isPending}
+                            title="We'll email you a code to confirm before turning this on"
+                            className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 shrink-0"
+                          >
+                            {requestEnable2FA.isPending ? 'Sending…' : 'Enable'}
+                          </button>
+                        ) : null}
+                      </div>
+
+                      {!twoFaEnabled && twoFaStep === 'confirming' && (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-xs text-gray-500">
+                            Enter the 6-digit code we just emailed to <strong>{user?.email}</strong> to finish enabling.
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={6}
+                            value={twoFaCode}
+                            onChange={(e) => setTwoFaCode(e.target.value.replace(/\D/g, ''))}
+                            placeholder="6-digit code"
+                            className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <button
+                            onClick={() => confirmEnable2FA.mutate()}
+                            disabled={confirmEnable2FA.isPending || twoFaCode.length < 6}
+                            className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            {confirmEnable2FA.isPending ? 'Verifying…' : 'Confirm'}
+                          </button>
+                          <button
+                            onClick={() => { setTwoFaStep('idle'); setTwoFaCode(''); }}
+                            className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700"
+                          >
+                            Cancel
+                          </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Active Sessions */}
