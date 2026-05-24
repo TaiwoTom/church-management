@@ -4,6 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
+
 Church Management System - a Next.js 14 web application for managing church operations including members, attendance, ministries, sermons, and communications.
 
 ## Development Commands
